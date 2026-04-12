@@ -19,6 +19,7 @@ const {
   findUserById,
   findTransactionById,
   getOverview,
+  getSpendingTimeline,
   hasUsers,
   importBankRows,
   listCategories,
@@ -203,6 +204,7 @@ app.get("/", requireSetup, requireAuth, (req, res) => {
   const transactionOffset = (transactionPage - 1) * pageSize;
   const overview = getOverview();
   const categories = listCategoriesWithSpending();
+  const spendingTimeline = getSpendingTimeline(8);
   const categoryOptions = listCategories();
   const transactions = listTransactions({
     limit: pageSize,
@@ -215,7 +217,24 @@ app.get("/", requireSetup, requireAuth, (req, res) => {
     ...transactionListState,
     transactionPage,
   };
+  const topSpendingCategories = categories
+    .filter((category) => Number(category.spent) > 0)
+    .sort((left, right) => right.spent - left.spent);
+  const visibleBreakdown = topSpendingCategories.slice(0, 4);
+  const otherSpent = topSpendingCategories
+    .slice(4)
+    .reduce((sum, category) => sum + Number(category.spent || 0), 0);
+  const categoryBreakdown = otherSpent
+    ? visibleBreakdown.concat({
+        id: "other",
+        name: "Other",
+        spent: otherSpent,
+        monthlyBudget: 0,
+      })
+    : visibleBreakdown;
+
   res.render("dashboard", {
+    categoryBreakdown,
     categories,
     categoryOptions,
     incomeEntries,
@@ -244,6 +263,7 @@ app.get("/", requireSetup, requireAuth, (req, res) => {
       transactionCount: overview.transactionCount,
       incomeCount: overview.incomeCount,
     },
+    spendingTimeline,
     today: today(),
     formatCurrency: currency,
   });

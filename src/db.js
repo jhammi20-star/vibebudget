@@ -366,6 +366,49 @@ function getOverview() {
     .get();
 }
 
+function getSpendingTimeline(days = 8) {
+  const safeDays = Math.max(Number(days) || 8, 1);
+  const latestRow = db
+    .prepare(`
+      SELECT COALESCE(MAX(transaction_date), DATE('now')) AS latestDate
+      FROM transactions
+    `)
+    .get();
+
+  const endDate = new Date(`${latestRow.latestDate}T00:00:00`);
+  const dates = [];
+
+  for (let index = safeDays - 1; index >= 0; index -= 1) {
+    const date = new Date(endDate);
+    date.setDate(endDate.getDate() - index);
+    dates.push(date.toISOString().slice(0, 10));
+  }
+
+  const totals = db
+    .prepare(`
+      SELECT
+        transaction_date AS transactionDate,
+        COALESCE(SUM(amount), 0) AS total
+      FROM transactions
+      WHERE transaction_date BETWEEN ? AND ?
+      GROUP BY transaction_date
+      ORDER BY transaction_date ASC
+    `)
+    .all(dates[0], dates[dates.length - 1]);
+
+  const totalsByDate = new Map(
+    totals.map((row) => [row.transactionDate, Number(row.total) || 0]),
+  );
+
+  return dates.map((date) => ({
+    date,
+    total: totalsByDate.get(date) || 0,
+    shortLabel: new Intl.DateTimeFormat("en-US", { weekday: "short" }).format(
+      new Date(`${date}T00:00:00`),
+    ),
+  }));
+}
+
 function importBankRows({ rows, createdBy }) {
   const insertTransaction = db.prepare(`
     INSERT INTO transactions (category_id, description, amount, transaction_date, created_by)
@@ -428,6 +471,7 @@ module.exports = {
   findUserById,
   findTransactionById,
   getOverview,
+  getSpendingTimeline,
   hasUsers,
   importBankRows,
   countTransactions,
