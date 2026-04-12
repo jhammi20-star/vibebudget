@@ -26,6 +26,7 @@ const {
   listIncomeEntries,
   listTransactions,
   updateCategory,
+  updateTransactionCategory,
   updateTransaction,
 } = require("./db");
 const { buildImportPreview } = require("./importer");
@@ -98,6 +99,7 @@ app.use(
     resave: false,
     saveUninitialized: false,
     rolling: true,
+    rolling: false,
     store: new SqliteSessionStore(),
     cookie: {
       httpOnly: true,
@@ -411,15 +413,30 @@ app.post("/transactions/:id/category", requireAuth, (req, res) => {
       throw new Error("Missing transaction");
     }
 
-    updateTransaction({
-      id: req.params.id,
-      categoryId: req.body.categoryId,
-      description: existingTransaction.description,
-      amount: existingTransaction.amount,
-      transactionDate: existingTransaction.transactionDate,
-    });
+    const categoryId = Number(req.body.categoryId);
+    const validCategory = findCategoryById(categoryId);
+    if (!validCategory) {
+      throw new Error("Invalid category");
+    }
+
+    updateTransactionCategory(req.params.id, categoryId);
+
+    if (req.get("x-requested-with") === "fetch") {
+      return res.status(200).json({
+        ok: true,
+        categoryId,
+        categoryName: validCategory.name,
+      });
+    }
+
     req.session.success = "Category updated.";
   } catch (error) {
+    if (req.get("x-requested-with") === "fetch") {
+      return res.status(400).json({
+        ok: false,
+        error: "Could not update that transaction category.",
+      });
+    }
     req.session.error = "Could not update that transaction category.";
   }
   const query = buildTransactionListQuery(transactionListState);

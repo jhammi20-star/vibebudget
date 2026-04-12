@@ -245,7 +245,12 @@
                   <%= transaction.transactionDate %> • added by
                   <%= transaction.createdByName %>
                 </p>
-                <form action="/transactions/<%= transaction.id %>/category" method="post" class="inline-category-form">
+                <form
+                  action="/transactions/<%= transaction.id %>/category"
+                  method="post"
+                  class="inline-category-form"
+                  data-inline-category-form
+                >
                   <input type="hidden" name="transactionPage" value="<%= transactionListState.transactionPage %>" />
                   <input
                     type="hidden"
@@ -259,7 +264,7 @@
                   />
                   <label>
                     Budget category
-                    <select name="categoryId" onchange="this.form.submit()">
+                    <select name="categoryId" data-inline-category-select>
                       <% categoryOptions.forEach((category) => { %>
                         <option
                           value="<%= category.id %>"
@@ -270,6 +275,7 @@
                       <% }) %>
                     </select>
                   </label>
+                  <span class="inline-save-status" data-inline-category-status aria-live="polite"></span>
                 </form>
               </div>
               <div class="transaction-actions">

@@ -236,6 +236,14 @@ function updateTransaction({ id, categoryId, description, amount, transactionDat
   );
 }
 
+function updateTransactionCategory(id, categoryId) {
+  db.prepare(`
+    UPDATE transactions
+    SET category_id = ?
+    WHERE id = ?
+  `).run(Number(categoryId), Number(id));
+}
+
 function deleteIncome(id) {
   db.prepare("DELETE FROM income_entries WHERE id = ?").run(Number(id));
 }
@@ -428,5 +436,6 @@ module.exports = {
   listIncomeEntries,
   listTransactions,
   updateCategory,
+  updateTransactionCategory,
   updateTransaction,
 };

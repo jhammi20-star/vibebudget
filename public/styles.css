@@ -573,6 +573,27 @@ button:hover {
   padding: 10px 12px;
 }
 
+.inline-save-status {
+  display: inline-block;
+  min-height: 1.1rem;
+  margin-top: 8px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.inline-save-status[data-state="pending"] {
+  color: var(--muted);
+}
+
+.inline-save-status[data-state="success"] {
+  color: var(--accent-dark);
+}
+
+.inline-save-status[data-state="error"] {
+  color: var(--danger);
+}
+
 .pagination-status {
   flex: 1 1 auto;
 }
