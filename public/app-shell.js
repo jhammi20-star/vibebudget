@@ -40,6 +40,7 @@ inlineCategoryForms.forEach((form) => {
   }
 
   let resetTimer = null;
+  let isSubmittingFallback = false;
 
   const setStatus = (message, isError = false) => {
     status.textContent = message;
@@ -49,6 +50,18 @@ inlineCategoryForms.forEach((form) => {
       status.textContent = "";
       status.dataset.state = "";
     }, 1800);
+  };
+
+  const submitFallback = () => {
+    if (isSubmittingFallback) {
+      return;
+    }
+
+    isSubmittingFallback = true;
+    select.disabled = false;
+    status.textContent = "Saving...";
+    status.dataset.state = "pending";
+    HTMLFormElement.prototype.submit.call(form);
   };
 
   select.addEventListener("change", async () => {
@@ -68,6 +81,11 @@ inlineCategoryForms.forEach((form) => {
         body: new URLSearchParams(formData).toString(),
       });
 
+      if (response.redirected) {
+        submitFallback();
+        return;
+      }
+
       const payload = await response.json().catch(() => ({}));
       if (!response.ok || !payload.ok) {
         throw new Error(payload.error || "Could not save category");
@@ -77,9 +95,11 @@ inlineCategoryForms.forEach((form) => {
       setStatus("Saved");
     } catch (_error) {
       select.value = previousValue;
-      setStatus("Save failed", true);
+      submitFallback();
     } finally {
-      select.disabled = false;
+      if (!isSubmittingFallback) {
+        select.disabled = false;
+      }
     }
   });
 
