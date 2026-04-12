@@ -134,7 +134,9 @@ function requireSetup(req, res, next) {
 function requireAuth(req, res, next) {
   if (!req.session.userId) {
     req.session.error = "Please sign in to view your budget.";
-    return res.redirect("/login");
+    return req.session.save(() => {
+      res.redirect("/login");
+    });
   }
   return next();
 }
@@ -337,12 +339,16 @@ app.post("/login", requireSetup, authLimiter, (req, res) => {
 
   if (!user || !bcrypt.compareSync(password, user.password_hash)) {
     req.session.error = "That email or password did not match.";
-    return res.redirect("/login");
+    return req.session.save(() => {
+      res.redirect("/login");
+    });
   }
 
   req.session.userId = user.id;
   req.session.success = `Welcome back, ${user.name}.`;
-  return res.redirect("/");
+  return req.session.save(() => {
+    res.redirect("/");
+  });
 });
 
 app.post("/logout", requireAuth, (req, res) => {
