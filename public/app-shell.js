@@ -58,12 +58,14 @@ inlineCategoryForms.forEach((form) => {
     status.dataset.state = "pending";
 
     try {
+      const formData = new FormData(form);
       const response = await fetch(form.action, {
         method: "POST",
         headers: {
           "X-Requested-With": "fetch",
+          "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
         },
-        body: new FormData(form),
+        body: new URLSearchParams(formData).toString(),
       });
 
       const payload = await response.json().catch(() => ({}));
