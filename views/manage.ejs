@@ -1,0 +1,182 @@
+<%- include("partials/head", { title: "Manage Budget" }) %>
+
+<main class="page-shell">
+  <%- include("partials/app-nav", { currentPath: "/manage" }) %>
+
+  <header class="topbar app-topbar">
+    <div>
+      <p class="eyebrow">Budget tools</p>
+      <h1>Manage your shared budget</h1>
+      <p class="muted">Add imports, income, transactions, and categories from one dedicated space.</p>
+    </div>
+    <a href="/" class="button-link">Back to dashboard</a>
+  </header>
+
+  <%- include("partials/flash") %>
+
+  <section class="dashboard-grid">
+    <article class="panel stack-lg">
+      <div>
+        <p class="eyebrow">Import history</p>
+        <h2>Upload bank CSV</h2>
+        <p class="muted">
+          Import common bank exports with columns like date, description, amount, debit, or credit.
+          The app will classify income and auto-categorize expenses.
+        </p>
+      </div>
+      <form action="/imports/bank-csv" method="post" enctype="multipart/form-data" class="stack">
+        <label>
+          CSV file
+          <input type="file" name="bankCsv" accept=".csv,text/csv" required />
+        </label>
+        <button type="submit">Import CSV</button>
+      </form>
+    </article>
+
+    <article class="panel stack-lg">
+      <div>
+        <p class="eyebrow">Track income</p>
+        <h2>Add income</h2>
+      </div>
+      <form action="/income" method="post" class="stack">
+        <label>
+          Source
+          <input type="text" name="source" placeholder="Paycheck" required />
+        </label>
+        <div class="split">
+          <label>
+            Amount
+            <input type="number" min="0" step="0.01" name="amount" required />
+          </label>
+          <label>
+            Date received
+            <input type="date" name="receivedDate" value="<%= today %>" required />
+          </label>
+        </div>
+        <button type="submit">Save income</button>
+      </form>
+    </article>
+
+    <article class="panel stack-lg">
+      <div>
+        <p class="eyebrow">Track spending</p>
+        <h2><%= editingTransaction ? "Edit transaction" : "Add transaction" %></h2>
+      </div>
+      <form
+        action="<%= editingTransaction ? `/transactions/${editingTransaction.id}/update` : '/transactions' %>"
+        method="post"
+        class="stack"
+      >
+        <% if (editingTransaction) { %>
+          <input type="hidden" name="transactionPage" value="<%= transactionListState.transactionPage %>" />
+          <input
+            type="hidden"
+            name="transactionSearch"
+            value="<%= transactionListState.transactionSearch %>"
+          />
+          <input type="hidden" name="transactionSort" value="<%= transactionListState.transactionSort %>" />
+        <% } %>
+        <label>
+          Description
+          <input
+            type="text"
+            name="description"
+            placeholder="Weekly groceries"
+            value="<%= editingTransaction ? editingTransaction.description : '' %>"
+            required
+          />
+        </label>
+        <div class="split">
+          <label>
+            Amount
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              name="amount"
+              value="<%= editingTransaction ? editingTransaction.amount : '' %>"
+              required
+            />
+          </label>
+          <label>
+            Date
+            <input
+              type="date"
+              name="transactionDate"
+              value="<%= editingTransaction ? editingTransaction.transactionDate : today %>"
+              required
+            />
+          </label>
+        </div>
+        <label>
+          Category
+          <select name="categoryId" required>
+            <% categoryOptions.forEach((category) => { %>
+              <option
+                value="<%= category.id %>"
+                <%= editingTransaction && Number(editingTransaction.categoryId) === Number(category.id) ? 'selected' : '' %>
+              >
+                <%= category.name %>
+              </option>
+            <% }) %>
+          </select>
+        </label>
+        <div class="form-actions">
+          <button type="submit"><%= editingTransaction ? "Save changes" : "Save transaction" %></button>
+          <% if (editingTransaction) { %>
+            <a
+              href="/manage<%= transactionListQuery ? `?${transactionListQuery}` : '' %>"
+              class="button-link"
+            >
+              Cancel
+            </a>
+          <% } %>
+        </div>
+      </form>
+    </article>
+
+    <article class="panel stack-lg">
+      <div>
+        <p class="eyebrow">Plan ahead</p>
+        <h2><%= editingCategory ? "Edit category" : "Add category" %></h2>
+      </div>
+      <form
+        action="<%= editingCategory ? `/categories/${editingCategory.id}/update` : '/categories' %>"
+        method="post"
+        class="stack"
+      >
+        <label>
+          Category name
+          <input
+            type="text"
+            name="name"
+            placeholder="Childcare"
+            value="<%= editingCategory ? editingCategory.name : '' %>"
+            required
+          />
+        </label>
+        <label>
+          Monthly budget
+          <input
+            type="number"
+            min="0"
+            step="0.01"
+            name="monthlyBudget"
+            value="<%= editingCategory ? editingCategory.monthlyBudget : '' %>"
+            required
+          />
+        </label>
+        <div class="form-actions">
+          <button type="submit"><%= editingCategory ? "Save changes" : "Add category" %></button>
+          <% if (editingCategory) { %>
+            <a href="/manage" class="button-link">Cancel</a>
+          <% } %>
+        </div>
+      </form>
+    </article>
+  </section>
+</main>
+
+<script src="/app-shell.js"></script>
+
+<%- include("partials/footer") %>

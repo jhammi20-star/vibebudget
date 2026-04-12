@@ -1,0 +1,31 @@
+<%- include("partials/head", { title: "Sign In" }) %>
+
+<main class="auth-shell">
+  <section class="auth-panel auth-panel-accent">
+    <p class="eyebrow">Welcome back</p>
+    <h1>Sign in to your household budget</h1>
+    <p class="lede">
+      Each of you has your own login, but all transactions and categories stay in one shared
+      budget.
+    </p>
+  </section>
+
+  <section class="auth-panel">
+    <%- include("partials/flash") %>
+
+    <form action="/login" method="post" class="stack-lg narrow-form">
+      <label>
+        Email
+        <input type="email" name="email" required />
+      </label>
+      <label>
+        Password
+        <input type="password" name="password" required />
+      </label>
+      <button type="submit">Sign in</button>
+    </form>
+  </section>
+</main>
+
+<%- include("partials/footer") %>
+

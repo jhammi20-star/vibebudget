@@ -1,0 +1,331 @@
+<%- include("partials/head", { title: "Budget Dashboard" }) %>
+
+<main class="page-shell">
+  <%- include("partials/app-nav", { currentPath: "/" }) %>
+
+  <header class="topbar app-topbar">
+    <div>
+      <p class="eyebrow">Shared budget</p>
+      <h1>Welcome, <%= currentUser.name %></h1>
+      <p class="muted">Everything you add here is visible to both accounts.</p>
+    </div>
+    <a href="/manage" class="button-link">Manage budget</a>
+  </header>
+
+  <%- include("partials/flash") %>
+
+  <% const summaryMax = Math.max(overviewRaw.totalIncome, overviewRaw.totalBudget, overviewRaw.totalSpent, 1); %>
+  <% const summaryRemainingScale = Math.max(Math.abs(overviewRaw.netAvailable), Math.abs(overviewRaw.remaining), 1); %>
+  <% const entryTotal = Math.max(overviewRaw.incomeCount + overviewRaw.transactionCount, 1); %>
+  <% const spentVsBudgetPercent = Math.min((overviewRaw.totalSpent / Math.max(overviewRaw.totalBudget, 1)) * 100, 100); %>
+  <% const incomeVsSpentPercent = Math.min((overviewRaw.totalIncome / Math.max(overviewRaw.totalSpent, 1)) * 100, 100); %>
+  <% const incomeEntryPercent = (overviewRaw.incomeCount / entryTotal) * 100; %>
+  <% const transactionEntryPercent = (overviewRaw.transactionCount / entryTotal) * 100; %>
+
+  <section class="stats-grid">
+    <article class="stat-card chart-card">
+      <div class="chart-card-head">
+        <span>Total income</span>
+        <small><%= Math.round((overviewRaw.totalIncome / summaryMax) * 100) %>% of top metric</small>
+      </div>
+      <strong><%= overview.totalIncome %></strong>
+      <div class="metric-bar">
+        <span class="metric-bar-fill income-fill" style="width: <%= (overviewRaw.totalIncome / summaryMax) * 100 %>%"></span>
+      </div>
+      <p class="chart-note">Income vs spending</p>
+      <div class="comparison-track">
+        <span class="comparison-fill income-fill" style="width: <%= incomeVsSpentPercent %>%"></span>
+      </div>
+    </article>
+    <article class="stat-card chart-card">
+      <div class="chart-card-head">
+        <span>Total monthly budget</span>
+        <small><%= Math.round((overviewRaw.totalBudget / summaryMax) * 100) %>% of top metric</small>
+      </div>
+      <strong><%= overview.totalBudget %></strong>
+      <div class="metric-bar">
+        <span class="metric-bar-fill budget-fill" style="width: <%= (overviewRaw.totalBudget / summaryMax) * 100 %>%"></span>
+      </div>
+      <p class="chart-note">Budget vs spending</p>
+      <div class="comparison-track">
+        <span class="comparison-fill budget-fill" style="width: <%= spentVsBudgetPercent %>%"></span>
+      </div>
+    </article>
+    <article class="stat-card chart-card">
+      <div class="chart-card-head">
+        <span>Total spent</span>
+        <small><%= Math.round((overviewRaw.totalSpent / summaryMax) * 100) %>% of top metric</small>
+      </div>
+      <strong><%= overview.totalSpent %></strong>
+      <div class="metric-bar">
+        <span class="metric-bar-fill spent-fill" style="width: <%= (overviewRaw.totalSpent / summaryMax) * 100 %>%"></span>
+      </div>
+      <p class="chart-note">Overspending risk</p>
+      <div class="comparison-track comparison-track-warm">
+        <span class="comparison-fill spent-fill" style="width: <%= spentVsBudgetPercent %>%"></span>
+      </div>
+    </article>
+    <article class="stat-card chart-card">
+      <div class="chart-card-head">
+        <span>Net available</span>
+        <small><%= overviewRaw.netAvailable >= 0 ? "Positive cash flow" : "Running behind" %></small>
+      </div>
+      <strong class="<%= overviewRaw.netAvailable < 0 ? 'negative-metric' : '' %>"><%= overview.netAvailable %></strong>
+      <div class="ring-chart <%= overviewRaw.netAvailable < 0 ? 'ring-chart-negative' : '' %>">
+        <svg viewBox="0 0 120 120" aria-hidden="true">
+          <circle class="ring-track" cx="60" cy="60" r="44"></circle>
+          <circle
+            class="ring-progress"
+            cx="60"
+            cy="60"
+            r="44"
+            stroke-dasharray="<%= (Math.min(Math.abs(overviewRaw.netAvailable) / summaryRemainingScale, 1) * 276.46).toFixed(2) %> 276.46"
+          ></circle>
+        </svg>
+        <span><%= Math.round((Math.abs(overviewRaw.netAvailable) / summaryRemainingScale) * 100) %>%</span>
+      </div>
+    </article>
+    <article class="stat-card chart-card">
+      <div class="chart-card-head">
+        <span>Budget remaining</span>
+        <small><%= overviewRaw.remaining >= 0 ? "Room left this cycle" : "Budget exceeded" %></small>
+      </div>
+      <strong class="<%= overviewRaw.remaining < 0 ? 'negative-metric' : '' %>"><%= overview.remaining %></strong>
+      <div class="ring-chart <%= overviewRaw.remaining < 0 ? 'ring-chart-negative' : '' %>">
+        <svg viewBox="0 0 120 120" aria-hidden="true">
+          <circle class="ring-track" cx="60" cy="60" r="44"></circle>
+          <circle
+            class="ring-progress"
+            cx="60"
+            cy="60"
+            r="44"
+            stroke-dasharray="<%= (Math.min(Math.abs(overviewRaw.remaining) / summaryRemainingScale, 1) * 276.46).toFixed(2) %> 276.46"
+          ></circle>
+        </svg>
+        <span><%= Math.round((Math.abs(overviewRaw.remaining) / summaryRemainingScale) * 100) %>%</span>
+      </div>
+    </article>
+    <article class="stat-card chart-card">
+      <div class="chart-card-head">
+        <span>Entries</span>
+        <small><%= overview.incomeCount %> income / <%= overview.transactionCount %> spending</small>
+      </div>
+      <strong><%= overview.incomeCount + overview.transactionCount %></strong>
+      <div class="stacked-bars">
+        <span class="stacked-bar income-fill" style="width: <%= incomeEntryPercent %>%"></span>
+        <span class="stacked-bar spent-fill" style="width: <%= transactionEntryPercent %>%"></span>
+      </div>
+      <div class="legend-row">
+        <span><i class="legend-dot income-fill"></i>Income items</span>
+        <span><i class="legend-dot spent-fill"></i>Expense items</span>
+      </div>
+    </article>
+  </section>
+
+  <section class="dashboard-grid dashboard-grid-wide">
+    <article class="panel stack-lg">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">Budget by category</p>
+          <h2>Category overview</h2>
+        </div>
+        <a href="/manage" class="button-link">Edit categories</a>
+      </div>
+      <div class="stack">
+        <% categories.forEach((category) => { %>
+          <% const percent = category.monthlyBudget > 0 ? Math.min((category.spent / category.monthlyBudget) * 100, 100) : 0; %>
+          <div class="category-card">
+            <div class="row">
+              <strong><%= category.name %></strong>
+              <span><%= formatCurrency(category.spent) %> / <%= formatCurrency(category.monthlyBudget) %></span>
+            </div>
+            <div class="progress">
+              <span style="width: <%= percent %>%"></span>
+            </div>
+            <div class="card-actions">
+              <a href="/manage?editCategory=<%= category.id %>" class="button-link">Edit</a>
+            </div>
+          </div>
+        <% }) %>
+      </div>
+    </article>
+
+    <article class="panel stack-lg">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">Income activity</p>
+          <h2>Income entries</h2>
+        </div>
+        <a href="/manage" class="button-link">Add income</a>
+      </div>
+
+      <% if (incomeEntries.length === 0) { %>
+        <p class="muted">No income logged yet. Add a paycheck or other income source to balance the budget.</p>
+      <% } else { %>
+        <div class="table-list">
+          <% incomeEntries.forEach((income) => { %>
+            <div class="transaction-row">
+              <div>
+                <strong><%= income.source %></strong>
+                <p class="muted">
+                  Received <%= income.receivedDate %> • added by <%= income.createdByName %>
+                </p>
+              </div>
+              <div class="transaction-actions">
+                <strong><%= formatCurrency(income.amount) %></strong>
+                <form action="/income/<%= income.id %>/delete" method="post">
+                  <button type="submit" class="text-button">Delete</button>
+                </form>
+              </div>
+            </div>
+          <% }) %>
+        </div>
+      <% } %>
+    </article>
+
+    <article class="panel stack-lg">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">Recent activity</p>
+          <h2>Transactions</h2>
+        </div>
+        <a href="/manage" class="button-link">Add transaction</a>
+      </div>
+
+      <form action="/" method="get" class="transaction-toolbar">
+        <label class="toolbar-search">
+          Search transactions
+          <input
+            type="search"
+            name="transactionSearch"
+            value="<%= transactionListState.transactionSearch %>"
+            placeholder="Search description, category, date..."
+          />
+        </label>
+        <label class="toolbar-sort">
+          Sort by
+          <select name="transactionSort">
+            <option value="newest" <%= transactionListState.transactionSort === 'newest' ? 'selected' : '' %>>
+              Newest first
+            </option>
+            <option value="oldest" <%= transactionListState.transactionSort === 'oldest' ? 'selected' : '' %>>
+              Oldest first
+            </option>
+            <option value="highest" <%= transactionListState.transactionSort === 'highest' ? 'selected' : '' %>>
+              Highest amount
+            </option>
+            <option value="lowest" <%= transactionListState.transactionSort === 'lowest' ? 'selected' : '' %>>
+              Lowest amount
+            </option>
+            <option
+              value="description"
+              <%= transactionListState.transactionSort === 'description' ? 'selected' : '' %>
+            >
+              Description A-Z
+            </option>
+            <option value="category" <%= transactionListState.transactionSort === 'category' ? 'selected' : '' %>>
+              Category A-Z
+            </option>
+          </select>
+        </label>
+        <button type="submit" class="button-secondary toolbar-button">Apply</button>
+      </form>
+
+      <% if (transactions.length === 0) { %>
+        <p class="muted">
+          <%= transactionListState.transactionSearch ? 'No transactions match that search yet.' : 'No spending logged yet. Add your first transaction to get started.' %>
+        </p>
+      <% } else { %>
+        <div class="table-list">
+          <% transactions.forEach((transaction) => { %>
+            <div class="transaction-row">
+              <div>
+                <strong><%= transaction.description %></strong>
+                <p class="muted">
+                  <%= transaction.transactionDate %> • added by
+                  <%= transaction.createdByName %>
+                </p>
+                <form action="/transactions/<%= transaction.id %>/category" method="post" class="inline-category-form">
+                  <input type="hidden" name="transactionPage" value="<%= transactionListState.transactionPage %>" />
+                  <input
+                    type="hidden"
+                    name="transactionSearch"
+                    value="<%= transactionListState.transactionSearch %>"
+                  />
+                  <input
+                    type="hidden"
+                    name="transactionSort"
+                    value="<%= transactionListState.transactionSort %>"
+                  />
+                  <label>
+                    Budget category
+                    <select name="categoryId" onchange="this.form.submit()">
+                      <% categoryOptions.forEach((category) => { %>
+                        <option
+                          value="<%= category.id %>"
+                          <%= Number(transaction.categoryId) === Number(category.id) ? 'selected' : '' %>
+                        >
+                          <%= category.name %>
+                        </option>
+                      <% }) %>
+                    </select>
+                  </label>
+                </form>
+              </div>
+              <div class="transaction-actions">
+                <strong><%= formatCurrency(transaction.amount) %></strong>
+                <div class="inline-actions">
+                  <a
+                    href="/manage?<%= new URLSearchParams({ ...transactionListState, editTransaction: transaction.id }).toString() %>"
+                    class="button-link"
+                  >
+                    Edit
+                  </a>
+                  <form action="/transactions/<%= transaction.id %>/delete" method="post">
+                    <input type="hidden" name="transactionPage" value="<%= transactionListState.transactionPage %>" />
+                    <input
+                      type="hidden"
+                      name="transactionSearch"
+                      value="<%= transactionListState.transactionSearch %>"
+                    />
+                    <input
+                      type="hidden"
+                      name="transactionSort"
+                      value="<%= transactionListState.transactionSort %>"
+                    />
+                    <button type="submit" class="text-button">Delete</button>
+                  </form>
+                </div>
+              </div>
+            </div>
+          <% }) %>
+        </div>
+        <div class="pagination-row">
+          <% if (hasPreviousTransactionPage) { %>
+            <a
+              href="/?<%= new URLSearchParams({ ...transactionListState, transactionPage: transactionPage - 1 }).toString() %>"
+              class="button-link"
+            >
+              Previous
+            </a>
+          <% } %>
+          <span class="muted pagination-status">
+            Page <%= transactionPage %> of <%= transactionPageCount %>
+          </span>
+          <% if (hasNextTransactionPage) { %>
+            <a
+              href="/?<%= new URLSearchParams({ ...transactionListState, transactionPage: transactionPage + 1 }).toString() %>"
+              class="button-link"
+            >
+              Next
+            </a>
+          <% } %>
+        </div>
+      <% } %>
+    </article>
+  </section>
+</main>
+
+<script src="/app-shell.js"></script>
+
+<%- include("partials/footer") %>

@@ -1,0 +1,36 @@
+<button
+  type="button"
+  class="menu-toggle"
+  data-menu-toggle
+  aria-expanded="false"
+  aria-controls="app-drawer"
+  aria-label="Open navigation menu"
+>
+  <span></span>
+  <span></span>
+  <span></span>
+</button>
+
+<div class="menu-backdrop" data-menu-backdrop hidden></div>
+
+<aside class="app-drawer" id="app-drawer" data-menu-drawer aria-hidden="true">
+  <div class="app-drawer-header">
+    <div>
+      <p class="eyebrow">Household budget</p>
+      <strong><%= currentUser ? currentUser.name : "Menu" %></strong>
+    </div>
+    <button type="button" class="drawer-close" data-menu-close aria-label="Close navigation menu">
+      ×
+    </button>
+  </div>
+
+  <nav class="drawer-nav">
+    <a href="/" class="drawer-link <%= currentPath === '/' ? 'is-active' : '' %>">Dashboard</a>
+    <a href="/manage" class="drawer-link <%= currentPath === '/manage' ? 'is-active' : '' %>">
+      Manage budget
+    </a>
+    <form action="/logout" method="post" class="drawer-logout">
+      <button type="submit" class="button-secondary">Log out</button>
+    </form>
+  </nav>
+</aside>

@@ -1,0 +1,100 @@
+<%- include("partials/head", { title: "Review Import" }) %>
+
+<main class="page-shell">
+  <%- include("partials/app-nav", { currentPath: "/manage" }) %>
+
+  <header class="topbar app-topbar">
+    <div>
+      <p class="eyebrow">Import preview</p>
+      <h1>Review <%= preview.fileName %></h1>
+      <p class="muted">Adjust the type or category for any row before importing it.</p>
+    </div>
+    <form action="/imports/bank-csv/cancel" method="post">
+      <button type="submit" class="button-secondary">Cancel import</button>
+    </form>
+  </header>
+
+  <%- include("partials/flash") %>
+
+  <form action="/imports/bank-csv/confirm" method="post" class="stack-lg">
+    <section class="panel stack-lg">
+      <div class="preview-summary">
+        <strong><%= preview.rows.length %> parsed rows</strong>
+        <span class="muted">Rows marked as ignore will be skipped.</span>
+      </div>
+
+      <div class="preview-table">
+        <div class="preview-head">
+          <span>Date</span>
+          <span>Description</span>
+          <span>Amount</span>
+          <span>Type</span>
+          <span>Category</span>
+        </div>
+
+        <% preview.rows.forEach((row, index) => { %>
+          <div class="preview-row">
+            <input type="hidden" name="rows[<%= index %>][date]" value="<%= row.date %>" />
+            <input type="hidden" name="rows[<%= index %>][description]" value="<%= row.description %>" />
+            <input type="hidden" name="rows[<%= index %>][amount]" value="<%= row.amount %>" />
+            <input type="hidden" name="rows[<%= index %>][fingerprint]" value="<%= row.fingerprint %>" />
+
+            <div>
+              <strong><%= row.date %></strong>
+              <% if (row.classification) { %>
+                <p class="muted">Bank classification: <%= row.classification %></p>
+              <% } %>
+            </div>
+            <div>
+              <strong><%= row.description %></strong>
+            </div>
+            <div>
+              <strong><%= formatCurrency(row.amount) %></strong>
+            </div>
+            <div>
+              <select
+                name="rows[<%= index %>][type]"
+                class="preview-type-select"
+                data-preview-type
+              >
+                <option value="income" <%= row.type === "income" ? "selected" : "" %>>Income</option>
+                <option value="transaction" <%= row.type === "transaction" ? "selected" : "" %>>
+                  Expense
+                </option>
+                <option value="ignore" <%= row.type === "ignore" ? "selected" : "" %>>Ignore</option>
+              </select>
+            </div>
+            <div>
+              <select
+                name="rows[<%= index %>][categoryId]"
+                class="preview-category-select"
+                data-preview-category
+                <%= row.type !== "transaction" ? "disabled" : "" %>
+              >
+                <option value="">Select category</option>
+                <% categories.forEach((category) => { %>
+                  <option
+                    value="<%= category.id %>"
+                    <%= String(row.categoryId) === String(category.id) ? "selected" : "" %>
+                  >
+                    <%= category.name %>
+                  </option>
+                <% }) %>
+              </select>
+            </div>
+          </div>
+        <% }) %>
+      </div>
+    </section>
+
+    <div class="preview-actions">
+      <a href="/manage" class="button-link">Back to manage</a>
+      <button type="submit">Import approved rows</button>
+    </div>
+  </form>
+</main>
+
+<script src="/app-shell.js"></script>
+<script src="/import-preview.js"></script>
+
+<%- include("partials/footer") %>

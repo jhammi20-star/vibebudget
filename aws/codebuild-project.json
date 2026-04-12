@@ -1,0 +1,30 @@
+{
+  "name": "vibe-budget-image-build",
+  "serviceRole": "arn:aws:iam::173128527939:role/vibe-budget-codebuild-role",
+  "artifacts": {
+    "type": "NO_ARTIFACTS"
+  },
+  "environment": {
+    "computeType": "BUILD_GENERAL1_SMALL",
+    "image": "aws/codebuild/amazonlinux2-aarch64-standard:3.0",
+    "type": "ARM_CONTAINER",
+    "privilegedMode": true,
+    "environmentVariables": [
+      {
+        "name": "REPOSITORY_URI",
+        "value": "173128527939.dkr.ecr.us-east-1.amazonaws.com/vibe-budget",
+        "type": "PLAINTEXT"
+      }
+    ]
+  },
+  "source": {
+    "type": "S3",
+    "location": "vibe-budget-deploy-173128527939/source.zip",
+    "buildspec": "buildspec.prod.yml"
+  },
+  "logsConfig": {
+    "cloudWatchLogs": {
+      "status": "ENABLED"
+    }
+  }
+}

@@ -1,0 +1,62 @@
+<%- include("partials/head", { title: "Set Up Your Budget App" }) %>
+
+<main class="auth-shell">
+  <section class="auth-panel auth-panel-accent">
+    <p class="eyebrow">Household budget</p>
+    <h1>Create the two shared accounts</h1>
+    <p class="lede">
+      This first-run setup creates one shared budget database with separate logins for each of
+      you.
+    </p>
+    <ul class="feature-list">
+      <li>Shared categories and spending across both accounts</li>
+      <li>Persistent SQLite storage on this machine</li>
+      <li>Starter budget categories to help you begin quickly</li>
+    </ul>
+  </section>
+
+  <section class="auth-panel">
+    <%- include("partials/flash") %>
+
+    <form action="/setup" method="post" class="stack-lg">
+      <div class="split">
+        <fieldset class="stack">
+          <legend>Person 1</legend>
+          <label>
+            Name
+            <input type="text" name="name1" required />
+          </label>
+          <label>
+            Email
+            <input type="email" name="email1" required />
+          </label>
+          <label>
+            Password
+            <input type="password" name="password1" minlength="8" required />
+          </label>
+        </fieldset>
+
+        <fieldset class="stack">
+          <legend>Person 2</legend>
+          <label>
+            Name
+            <input type="text" name="name2" required />
+          </label>
+          <label>
+            Email
+            <input type="email" name="email2" required />
+          </label>
+          <label>
+            Password
+            <input type="password" name="password2" minlength="8" required />
+          </label>
+        </fieldset>
+      </div>
+
+      <button type="submit">Create shared budget</button>
+    </form>
+  </section>
+</main>
+
+<%- include("partials/footer") %>
+
