@@ -257,35 +257,48 @@ const transactionSorts = {
   category: "c.name COLLATE NOCASE ASC, t.id DESC",
 };
 
-function buildTransactionFilters(search) {
+function buildTransactionFilters(search, categoryId) {
   const normalizedSearch = String(search || "").trim();
-  if (!normalizedSearch) {
+  const normalizedCategoryId = Number(categoryId);
+  const conditions = [];
+  const params = [];
+
+  if (Number.isInteger(normalizedCategoryId) && normalizedCategoryId > 0) {
+    conditions.push("t.category_id = ?");
+    params.push(normalizedCategoryId);
+  }
+
+  if (normalizedSearch) {
+    const pattern = `%${normalizedSearch}%`;
+    conditions.push(`(
+        t.description LIKE ? COLLATE NOCASE OR
+        c.name LIKE ? COLLATE NOCASE OR
+        u.name LIKE ? COLLATE NOCASE OR
+        t.transaction_date LIKE ?
+      )`);
+    params.push(pattern, pattern, pattern, pattern);
+  }
+
+  if (conditions.length === 0) {
     return {
       params: [],
       whereClause: "",
     };
   }
 
-  const pattern = `%${normalizedSearch}%`;
   return {
-    params: [pattern, pattern, pattern, pattern],
-    whereClause: `
-      WHERE
-        t.description LIKE ? COLLATE NOCASE OR
-        c.name LIKE ? COLLATE NOCASE OR
-        u.name LIKE ? COLLATE NOCASE OR
-        t.transaction_date LIKE ?
-    `,
+    params,
+    whereClause: `WHERE ${conditions.join(" AND ")}`,
   };
 }
 
-function listTransactions({ limit, offset, search, sort } = {}) {
+function listTransactions({ limit, offset, search, sort, categoryId } = {}) {
   const normalizedLimit =
     Number.isInteger(Number(limit)) && Number(limit) > 0 ? Number(limit) : null;
   const normalizedOffset =
     Number.isInteger(Number(offset)) && Number(offset) >= 0 ? Number(offset) : 0;
   const orderBy = transactionSorts[sort] || transactionSorts.newest;
-  const filters = buildTransactionFilters(search);
+  const filters = buildTransactionFilters(search, categoryId);
   const query = `
       SELECT
         t.id,
@@ -311,8 +324,8 @@ function listTransactions({ limit, offset, search, sort } = {}) {
     .all(...filters.params, normalizedLimit, normalizedOffset);
 }
 
-function countTransactions({ search } = {}) {
-  const filters = buildTransactionFilters(search);
+function countTransactions({ search, categoryId } = {}) {
+  const filters = buildTransactionFilters(search, categoryId);
   return db
     .prepare(`
       SELECT COUNT(*) AS count

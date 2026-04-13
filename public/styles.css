@@ -466,6 +466,44 @@ button:hover {
   align-items: start;
 }
 
+.dashboard-column-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 780px;
+}
+
+.dashboard-panel-scroll {
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 8px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(58, 141, 255, 0.4) transparent;
+}
+
+.dashboard-panel-scroll::-webkit-scrollbar {
+  width: 10px;
+}
+
+.dashboard-panel-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.dashboard-panel-scroll::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background: rgba(58, 141, 255, 0.28);
+  background-clip: padding-box;
+}
+
+.dashboard-panel-scroll-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
 .viz-panel {
   padding: 24px;
 }
@@ -540,6 +578,26 @@ button:hover {
   grid-template-columns: 18px minmax(0, 1fr);
   gap: 12px;
   align-items: start;
+}
+
+.legend-link {
+  padding: 10px 12px;
+  margin: -10px -12px;
+  border-radius: 18px;
+  color: inherit;
+  text-decoration: none;
+  transition: background 140ms ease, transform 140ms ease;
+}
+
+.legend-link:hover {
+  background: rgba(58, 141, 255, 0.08);
+  transform: translateX(2px);
+}
+
+.legend-link strong {
+  text-decoration: underline;
+  text-decoration-color: rgba(58, 141, 255, 0.22);
+  text-underline-offset: 0.14em;
 }
 
 .legend-swatch {
@@ -904,6 +962,41 @@ button:hover {
   flex: 1 1 auto;
 }
 
+.category-detail-total {
+  color: var(--muted);
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.category-detail-total strong {
+  color: var(--text);
+}
+
+.category-transaction-list {
+  display: grid;
+  gap: 16px;
+}
+
+.category-transaction-card {
+  padding: 20px;
+}
+
+.category-transaction-meta {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.category-transaction-amount {
+  white-space: nowrap;
+}
+
+.inline-delete-form {
+  margin-top: 10px;
+}
+
 .flash {
   padding: 14px 16px;
   margin-bottom: 18px;
@@ -983,6 +1076,10 @@ button:hover {
   .dashboard-content-grid > :last-child {
     grid-column: span 2;
   }
+
+  .dashboard-column-panel {
+    height: 720px;
+  }
 }
 
 @media (max-width: 900px) {
@@ -1017,6 +1114,14 @@ button:hover {
   .dashboard-phone-shell::before {
     inset: 10px;
     border-radius: 22px;
+  }
+
+  .dashboard-column-panel,
+  .dashboard-panel-scroll {
+    height: auto;
+    max-height: none;
+    overflow: visible;
+    padding-right: 0;
   }
 
   .dashboard-header {
@@ -1058,6 +1163,7 @@ button:hover {
   .app-drawer-header,
   .section-heading,
   .row,
+  .category-transaction-meta,
   .transaction-row,
   .transaction-actions,
   .transaction-toolbar,

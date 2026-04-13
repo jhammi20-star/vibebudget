@@ -167,10 +167,14 @@ function getTransactionListState(source = {}) {
   const transactionSearch = String(source.transactionSearch || "").trim();
   const requestedSort = String(source.transactionSort || "newest");
   const transactionSort = allowedSorts.has(requestedSort) ? requestedSort : "newest";
+  const requestedCategoryId = Number(source.transactionCategoryId || 0);
+  const transactionCategoryId =
+    Number.isInteger(requestedCategoryId) && requestedCategoryId > 0 ? requestedCategoryId : null;
   return {
     transactionPage,
     transactionSearch,
     transactionSort,
+    transactionCategoryId,
   };
 }
 
@@ -179,6 +183,8 @@ function buildTransactionListQuery(state, overrides = {}) {
   const transactionPage = overrides.transactionPage ?? state.transactionPage;
   const transactionSearch = overrides.transactionSearch ?? state.transactionSearch;
   const transactionSort = overrides.transactionSort ?? state.transactionSort;
+  const transactionCategoryId =
+    overrides.transactionCategoryId ?? state.transactionCategoryId;
 
   if (transactionPage > 1) {
     params.set("transactionPage", String(transactionPage));
@@ -189,8 +195,19 @@ function buildTransactionListQuery(state, overrides = {}) {
   if (transactionSort && transactionSort !== "newest") {
     params.set("transactionSort", transactionSort);
   }
+  if (transactionCategoryId) {
+    params.set("transactionCategoryId", String(transactionCategoryId));
+  }
 
   return params.toString();
+}
+
+function getSafeRedirectTarget(value, fallback) {
+  const candidate = String(value || "").trim();
+  if (!candidate.startsWith("/") || candidate.startsWith("//")) {
+    return fallback;
+  }
+  return candidate;
 }
 
 app.get("/", requireSetup, requireAuth, (req, res) => {
@@ -198,6 +215,7 @@ app.get("/", requireSetup, requireAuth, (req, res) => {
   const pageSize = 10;
   const totalTransactions = countTransactions({
     search: transactionListState.transactionSearch,
+    categoryId: transactionListState.transactionCategoryId,
   });
   const lastTransactionPage = Math.max(Math.ceil(totalTransactions / pageSize), 1);
   const transactionPage = Math.min(transactionListState.transactionPage, lastTransactionPage);
@@ -211,27 +229,16 @@ app.get("/", requireSetup, requireAuth, (req, res) => {
     offset: transactionOffset,
     search: transactionListState.transactionSearch,
     sort: transactionListState.transactionSort,
+    categoryId: transactionListState.transactionCategoryId,
   });
   const incomeEntries = listIncomeEntries();
   const currentTransactionState = {
     ...transactionListState,
     transactionPage,
   };
-  const topSpendingCategories = categories
-    .filter((category) => Number(category.spent) > 0)
-    .sort((left, right) => right.spent - left.spent);
-  const visibleBreakdown = topSpendingCategories.slice(0, 4);
-  const otherSpent = topSpendingCategories
-    .slice(4)
-    .reduce((sum, category) => sum + Number(category.spent || 0), 0);
-  const categoryBreakdown = otherSpent
-    ? visibleBreakdown.concat({
-        id: "other",
-        name: "Other",
-        spent: otherSpent,
-        monthlyBudget: 0,
-      })
-    : visibleBreakdown;
+  const categoryBreakdown = categories
+    .slice()
+    .sort((left, right) => Number(right.spent || 0) - Number(left.spent || 0));
 
   res.render("dashboard", {
     categoryBreakdown,
@@ -265,6 +272,50 @@ app.get("/", requireSetup, requireAuth, (req, res) => {
     },
     spendingTimeline,
     today: today(),
+    formatCurrency: currency,
+  });
+});
+
+app.get("/categories/:id/transactions", requireSetup, requireAuth, (req, res) => {
+  const category = findCategoryById(req.params.id);
+  if (!category) {
+    req.session.error = "That category could not be found.";
+    return res.redirect("/");
+  }
+
+  const transactionListState = {
+    ...getTransactionListState(req.query),
+    transactionCategoryId: Number(category.id),
+  };
+  const pageSize = 10;
+  const totalTransactions = countTransactions({
+    search: transactionListState.transactionSearch,
+    categoryId: transactionListState.transactionCategoryId,
+  });
+  const lastTransactionPage = Math.max(Math.ceil(totalTransactions / pageSize), 1);
+  const transactionPage = Math.min(transactionListState.transactionPage, lastTransactionPage);
+  const transactions = listTransactions({
+    limit: pageSize,
+    offset: (transactionPage - 1) * pageSize,
+    search: transactionListState.transactionSearch,
+    sort: transactionListState.transactionSort,
+    categoryId: transactionListState.transactionCategoryId,
+  });
+  const currentTransactionState = {
+    ...transactionListState,
+    transactionPage,
+  };
+
+  res.render("category-transactions", {
+    category,
+    categoryOptions: listCategories(),
+    transactions,
+    transactionListState: currentTransactionState,
+    transactionListQuery: buildTransactionListQuery(currentTransactionState),
+    transactionPage,
+    hasPreviousTransactionPage: transactionPage > 1,
+    hasNextTransactionPage: transactionPage < lastTransactionPage,
+    transactionPageCount: lastTransactionPage,
     formatCurrency: currency,
   });
 });
@@ -415,6 +466,10 @@ app.post("/transactions", requireAuth, (req, res) => {
 
 app.post("/transactions/:id/update", requireAuth, (req, res) => {
   const transactionListState = getTransactionListState(req.body);
+  const fallbackRedirect = (() => {
+    const query = buildTransactionListQuery(transactionListState);
+    return query ? `/manage?${query}` : "/manage";
+  })();
   try {
     updateTransaction({
       id: req.params.id,
@@ -427,8 +482,7 @@ app.post("/transactions/:id/update", requireAuth, (req, res) => {
   } catch (error) {
     req.session.error = "Could not update that transaction.";
   }
-  const query = buildTransactionListQuery(transactionListState);
-  res.redirect(query ? `/manage?${query}` : "/manage");
+  res.redirect(getSafeRedirectTarget(req.body.redirectTo, fallbackRedirect));
 });
 
 app.post("/transactions/:id/category", requireAuth, (req, res) => {
@@ -465,8 +519,11 @@ app.post("/transactions/:id/category", requireAuth, (req, res) => {
     }
     req.session.error = "Could not update that transaction category.";
   }
-  const query = buildTransactionListQuery(transactionListState);
-  res.redirect(query ? `/?${query}` : "/");
+  const fallbackRedirect = (() => {
+    const query = buildTransactionListQuery(transactionListState);
+    return query ? `/?${query}` : "/";
+  })();
+  res.redirect(getSafeRedirectTarget(req.body.redirectTo, fallbackRedirect));
 });
 
 app.post("/income", requireAuth, (req, res) => {
@@ -603,8 +660,11 @@ app.post("/transactions/:id/delete", requireAuth, (req, res) => {
   const transactionListState = getTransactionListState(req.body);
   deleteTransaction(req.params.id);
   req.session.success = "Transaction removed.";
-  const query = buildTransactionListQuery(transactionListState);
-  res.redirect(query ? `/?${query}` : "/");
+  const fallbackRedirect = (() => {
+    const query = buildTransactionListQuery(transactionListState);
+    return query ? `/?${query}` : "/";
+  })();
+  res.redirect(getSafeRedirectTarget(req.body.redirectTo, fallbackRedirect));
 });
 
 app.post("/income/:id/delete", requireAuth, (req, res) => {

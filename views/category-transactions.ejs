@@ -1,0 +1,127 @@
+<%- include("partials/head", { title: `${category.name} Transactions` }) %>
+
+<main class="page-shell">
+  <%- include("partials/app-nav", { currentPath: "/categories" }) %>
+
+  <header class="topbar app-topbar">
+    <div>
+      <p class="eyebrow">Category detail</p>
+      <h1><%= category.name %> transactions</h1>
+      <p class="muted">Review and edit transactions in this category without leaving the list.</p>
+    </div>
+    <div class="inline-actions">
+      <a href="/" class="button-link">Back to dashboard</a>
+      <a href="/manage" class="button-link">Manage budget</a>
+    </div>
+  </header>
+
+  <%- include("partials/flash") %>
+
+  <section class="panel stack-lg">
+    <div class="section-heading">
+      <div>
+        <p class="eyebrow">Quick edit</p>
+        <h2><%= category.name %></h2>
+      </div>
+      <span class="category-detail-total">
+        Budget <strong><%= formatCurrency(category.monthlyBudget) %></strong>
+      </span>
+    </div>
+
+    <form action="/categories/<%= category.id %>/transactions" method="get" class="transaction-toolbar">
+      <label class="toolbar-search">
+        Search this category
+        <input
+          type="search"
+          name="transactionSearch"
+          value="<%= transactionListState.transactionSearch %>"
+          placeholder="Search description, date, person..."
+        />
+      </label>
+      <label class="toolbar-sort">
+        Sort by
+        <select name="transactionSort">
+          <option value="newest" <%= transactionListState.transactionSort === 'newest' ? 'selected' : '' %>>Newest first</option>
+          <option value="oldest" <%= transactionListState.transactionSort === 'oldest' ? 'selected' : '' %>>Oldest first</option>
+          <option value="highest" <%= transactionListState.transactionSort === 'highest' ? 'selected' : '' %>>Highest amount</option>
+          <option value="lowest" <%= transactionListState.transactionSort === 'lowest' ? 'selected' : '' %>>Lowest amount</option>
+          <option value="description" <%= transactionListState.transactionSort === 'description' ? 'selected' : '' %>>Description A-Z</option>
+          <option value="category" <%= transactionListState.transactionSort === 'category' ? 'selected' : '' %>>Category A-Z</option>
+        </select>
+      </label>
+      <button type="submit" class="button-secondary toolbar-button">Apply</button>
+    </form>
+
+    <% if (transactions.length === 0) { %>
+      <p class="muted">
+        <%= transactionListState.transactionSearch
+          ? `No ${category.name} transactions matched that search.`
+          : `No transactions are currently assigned to ${category.name}.` %>
+      </p>
+    <% } else { %>
+      <div class="category-transaction-list">
+        <% transactions.forEach((transaction) => { %>
+          <% const redirectTo = `/categories/${category.id}/transactions?${new URLSearchParams({ ...transactionListState, transactionPage }).toString()}`; %>
+          <article class="panel category-transaction-card">
+            <div class="category-transaction-meta">
+              <div>
+                <strong><%= transaction.description %></strong>
+                <p class="muted"><%= transaction.transactionDate %> • added by <%= transaction.createdByName %></p>
+              </div>
+              <strong class="category-transaction-amount"><%= formatCurrency(transaction.amount) %></strong>
+            </div>
+
+            <form action="/transactions/<%= transaction.id %>/update" method="post" class="stack">
+              <input type="hidden" name="redirectTo" value="<%= redirectTo %>" />
+              <div class="split">
+                <label>
+                  Description
+                  <input type="text" name="description" value="<%= transaction.description %>" required />
+                </label>
+                <label>
+                  Amount
+                  <input type="number" min="0" step="0.01" name="amount" value="<%= transaction.amount %>" required />
+                </label>
+              </div>
+              <div class="split">
+                <label>
+                  Date
+                  <input type="date" name="transactionDate" value="<%= transaction.transactionDate %>" required />
+                </label>
+                <label>
+                  Category
+                  <select name="categoryId" required>
+                    <% categoryOptions.forEach((option) => { %>
+                      <option value="<%= option.id %>" <%= Number(option.id) === Number(transaction.categoryId) ? 'selected' : '' %>><%= option.name %></option>
+                    <% }) %>
+                  </select>
+                </label>
+              </div>
+              <div class="form-actions">
+                <button type="submit">Save changes</button>
+              </div>
+            </form>
+            <form action="/transactions/<%= transaction.id %>/delete" method="post" class="inline-delete-form">
+              <input type="hidden" name="redirectTo" value="<%= redirectTo %>" />
+              <button type="submit" class="text-button">Delete</button>
+            </form>
+          </article>
+        <% }) %>
+      </div>
+
+      <div class="pagination-row">
+        <% if (hasPreviousTransactionPage) { %>
+          <a href="/categories/<%= category.id %>/transactions?<%= new URLSearchParams({ ...transactionListState, transactionPage: transactionPage - 1 }).toString() %>" class="button-link">Previous</a>
+        <% } %>
+        <span class="muted pagination-status">Page <%= transactionPage %> of <%= transactionPageCount %></span>
+        <% if (hasNextTransactionPage) { %>
+          <a href="/categories/<%= category.id %>/transactions?<%= new URLSearchParams({ ...transactionListState, transactionPage: transactionPage + 1 }).toString() %>" class="button-link">Next</a>
+        <% } %>
+      </div>
+    <% } %>
+  </section>
+</main>
+
+<script src="/app-shell.js"></script>
+
+<%- include("partials/footer") %>

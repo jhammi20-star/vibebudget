@@ -108,13 +108,16 @@
               <p class="muted">Add transactions to see your category mix.</p>
             <% } else { %>
               <% breakdownStops.forEach((item) => { %>
-                <div class="legend-item">
+                <a
+                  href="/categories/<%= item.id %>/transactions"
+                  class="legend-item legend-link"
+                >
                   <span class="legend-swatch" style="background: <%= item.color %>"></span>
                   <div>
                     <strong><%= item.name %></strong>
                     <p><%= Math.round(item.percent) %>% · <%= formatCurrency(item.spent) %></p>
                   </div>
-                </div>
+                </a>
               <% }) %>
             <% } %>
           </div>
@@ -211,7 +214,7 @@
     </section>
 
     <section class="dashboard-content-grid">
-      <article class="panel stack-lg">
+      <article class="panel stack-lg dashboard-column-panel">
         <div class="section-heading">
           <div>
             <p class="eyebrow">Budget by category</p>
@@ -219,7 +222,7 @@
           </div>
           <a href="/manage" class="button-link">Edit categories</a>
         </div>
-        <div class="stack">
+        <div class="stack dashboard-panel-scroll">
           <% categories.forEach((category) => { %>
             <% const percent = category.monthlyBudget > 0 ? Math.min((category.spent / category.monthlyBudget) * 100, 100) : 0; %>
             <div class="category-card">
@@ -238,7 +241,7 @@
         </div>
       </article>
 
-      <article class="panel stack-lg">
+      <article class="panel stack-lg dashboard-column-panel" id="transactions-panel">
         <div class="section-heading">
           <div>
             <p class="eyebrow">Recent activity</p>
@@ -247,92 +250,94 @@
           <a href="/manage" class="button-link">Add transaction</a>
         </div>
 
-        <form action="/" method="get" class="transaction-toolbar">
-          <label class="toolbar-search">
-            Search transactions
-            <input
-              type="search"
-              name="transactionSearch"
-              value="<%= transactionListState.transactionSearch %>"
-              placeholder="Search description, category, date..."
-            />
-          </label>
-          <label class="toolbar-sort">
-            Sort by
-            <select name="transactionSort">
-              <option value="newest" <%= transactionListState.transactionSort === 'newest' ? 'selected' : '' %>>Newest first</option>
-              <option value="oldest" <%= transactionListState.transactionSort === 'oldest' ? 'selected' : '' %>>Oldest first</option>
-              <option value="highest" <%= transactionListState.transactionSort === 'highest' ? 'selected' : '' %>>Highest amount</option>
-              <option value="lowest" <%= transactionListState.transactionSort === 'lowest' ? 'selected' : '' %>>Lowest amount</option>
-              <option value="description" <%= transactionListState.transactionSort === 'description' ? 'selected' : '' %>>Description A-Z</option>
-              <option value="category" <%= transactionListState.transactionSort === 'category' ? 'selected' : '' %>>Category A-Z</option>
-            </select>
-          </label>
-          <button type="submit" class="button-secondary toolbar-button">Apply</button>
-        </form>
+        <div class="dashboard-panel-scroll dashboard-panel-scroll-form">
+          <form action="/" method="get" class="transaction-toolbar">
+            <label class="toolbar-search">
+              Search transactions
+              <input
+                type="search"
+                name="transactionSearch"
+                value="<%= transactionListState.transactionSearch %>"
+                placeholder="Search description, category, date..."
+              />
+            </label>
+            <label class="toolbar-sort">
+              Sort by
+              <select name="transactionSort">
+                <option value="newest" <%= transactionListState.transactionSort === 'newest' ? 'selected' : '' %>>Newest first</option>
+                <option value="oldest" <%= transactionListState.transactionSort === 'oldest' ? 'selected' : '' %>>Oldest first</option>
+                <option value="highest" <%= transactionListState.transactionSort === 'highest' ? 'selected' : '' %>>Highest amount</option>
+                <option value="lowest" <%= transactionListState.transactionSort === 'lowest' ? 'selected' : '' %>>Lowest amount</option>
+                <option value="description" <%= transactionListState.transactionSort === 'description' ? 'selected' : '' %>>Description A-Z</option>
+                <option value="category" <%= transactionListState.transactionSort === 'category' ? 'selected' : '' %>>Category A-Z</option>
+              </select>
+            </label>
+            <button type="submit" class="button-secondary toolbar-button">Apply</button>
+          </form>
 
-        <% if (transactions.length === 0) { %>
-          <p class="muted"><%= transactionListState.transactionSearch ? 'No transactions match that search yet.' : 'No spending logged yet. Add your first transaction to get started.' %></p>
-        <% } else { %>
-          <div class="table-list">
-            <% transactions.forEach((transaction) => { %>
-              <div class="transaction-row">
-                <div>
-                  <strong><%= transaction.description %></strong>
-                  <p class="muted"><%= transaction.transactionDate %> • added by <%= transaction.createdByName %></p>
-                  <form
-                    action="/transactions/<%= transaction.id %>/category"
-                    method="post"
-                    class="inline-category-form"
-                    data-inline-category-form
-                  >
-                    <input type="hidden" name="transactionPage" value="<%= transactionListState.transactionPage %>" />
-                    <input type="hidden" name="transactionSearch" value="<%= transactionListState.transactionSearch %>" />
-                    <input type="hidden" name="transactionSort" value="<%= transactionListState.transactionSort %>" />
-                    <label>
-                      Budget category
-                      <select name="categoryId" data-inline-category-select>
-                        <% categoryOptions.forEach((category) => { %>
-                          <option value="<%= category.id %>" <%= Number(transaction.categoryId) === Number(category.id) ? 'selected' : '' %>><%= category.name %></option>
-                        <% }) %>
-                      </select>
-                    </label>
-                    <span class="inline-save-status" data-inline-category-status aria-live="polite"></span>
-                  </form>
-                </div>
-                <div class="transaction-actions">
-                  <strong><%= formatCurrency(transaction.amount) %></strong>
-                  <div class="inline-actions">
-                    <a
-                      href="/manage?<%= new URLSearchParams({ ...transactionListState, editTransaction: transaction.id }).toString() %>"
-                      class="button-link"
+          <% if (transactions.length === 0) { %>
+            <p class="muted"><%= transactionListState.transactionSearch ? 'No transactions match that search yet.' : 'No spending logged yet. Add your first transaction to get started.' %></p>
+          <% } else { %>
+            <div class="table-list">
+              <% transactions.forEach((transaction) => { %>
+                <div class="transaction-row">
+                  <div>
+                    <strong><%= transaction.description %></strong>
+                    <p class="muted"><%= transaction.transactionDate %> • added by <%= transaction.createdByName %></p>
+                    <form
+                      action="/transactions/<%= transaction.id %>/category"
+                      method="post"
+                      class="inline-category-form"
+                      data-inline-category-form
                     >
-                      Edit
-                    </a>
-                    <form action="/transactions/<%= transaction.id %>/delete" method="post">
                       <input type="hidden" name="transactionPage" value="<%= transactionListState.transactionPage %>" />
                       <input type="hidden" name="transactionSearch" value="<%= transactionListState.transactionSearch %>" />
                       <input type="hidden" name="transactionSort" value="<%= transactionListState.transactionSort %>" />
-                      <button type="submit" class="text-button">Delete</button>
+                      <label>
+                        Budget category
+                        <select name="categoryId" data-inline-category-select>
+                          <% categoryOptions.forEach((category) => { %>
+                            <option value="<%= category.id %>" <%= Number(transaction.categoryId) === Number(category.id) ? 'selected' : '' %>><%= category.name %></option>
+                          <% }) %>
+                        </select>
+                      </label>
+                      <span class="inline-save-status" data-inline-category-status aria-live="polite"></span>
                     </form>
                   </div>
+                  <div class="transaction-actions">
+                    <strong><%= formatCurrency(transaction.amount) %></strong>
+                    <div class="inline-actions">
+                      <a
+                        href="/manage?<%= new URLSearchParams({ ...transactionListState, editTransaction: transaction.id }).toString() %>"
+                        class="button-link"
+                      >
+                        Edit
+                      </a>
+                      <form action="/transactions/<%= transaction.id %>/delete" method="post">
+                        <input type="hidden" name="transactionPage" value="<%= transactionListState.transactionPage %>" />
+                        <input type="hidden" name="transactionSearch" value="<%= transactionListState.transactionSearch %>" />
+                        <input type="hidden" name="transactionSort" value="<%= transactionListState.transactionSort %>" />
+                        <button type="submit" class="text-button">Delete</button>
+                      </form>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            <% }) %>
-          </div>
-          <div class="pagination-row">
-            <% if (hasPreviousTransactionPage) { %>
-              <a href="/?<%= new URLSearchParams({ ...transactionListState, transactionPage: transactionPage - 1 }).toString() %>" class="button-link">Previous</a>
-            <% } %>
-            <span class="muted pagination-status">Page <%= transactionPage %> of <%= transactionPageCount %></span>
-            <% if (hasNextTransactionPage) { %>
-              <a href="/?<%= new URLSearchParams({ ...transactionListState, transactionPage: transactionPage + 1 }).toString() %>" class="button-link">Next</a>
-            <% } %>
-          </div>
-        <% } %>
+              <% }) %>
+            </div>
+            <div class="pagination-row">
+              <% if (hasPreviousTransactionPage) { %>
+                <a href="/?<%= new URLSearchParams({ ...transactionListState, transactionPage: transactionPage - 1 }).toString() %>" class="button-link">Previous</a>
+              <% } %>
+              <span class="muted pagination-status">Page <%= transactionPage %> of <%= transactionPageCount %></span>
+              <% if (hasNextTransactionPage) { %>
+                <a href="/?<%= new URLSearchParams({ ...transactionListState, transactionPage: transactionPage + 1 }).toString() %>" class="button-link">Next</a>
+              <% } %>
+            </div>
+          <% } %>
+        </div>
       </article>
 
-      <article class="panel stack-lg">
+      <article class="panel stack-lg dashboard-column-panel">
         <div class="section-heading">
           <div>
             <p class="eyebrow">Income activity</p>
@@ -341,26 +346,28 @@
           <a href="/manage" class="button-link">Add income</a>
         </div>
 
-        <% if (incomeEntries.length === 0) { %>
-          <p class="muted">No income logged yet. Add a paycheck or other income source to balance the budget.</p>
-        <% } else { %>
-          <div class="table-list">
-            <% incomeEntries.forEach((income) => { %>
-              <div class="transaction-row">
-                <div>
-                  <strong><%= income.source %></strong>
-                  <p class="muted">Received <%= income.receivedDate %> • added by <%= income.createdByName %></p>
+        <div class="dashboard-panel-scroll">
+          <% if (incomeEntries.length === 0) { %>
+            <p class="muted">No income logged yet. Add a paycheck or other income source to balance the budget.</p>
+          <% } else { %>
+            <div class="table-list">
+              <% incomeEntries.forEach((income) => { %>
+                <div class="transaction-row">
+                  <div>
+                    <strong><%= income.source %></strong>
+                    <p class="muted">Received <%= income.receivedDate %> • added by <%= income.createdByName %></p>
+                  </div>
+                  <div class="transaction-actions">
+                    <strong><%= formatCurrency(income.amount) %></strong>
+                    <form action="/income/<%= income.id %>/delete" method="post">
+                      <button type="submit" class="text-button">Delete</button>
+                    </form>
+                  </div>
                 </div>
-                <div class="transaction-actions">
-                  <strong><%= formatCurrency(income.amount) %></strong>
-                  <form action="/income/<%= income.id %>/delete" method="post">
-                    <button type="submit" class="text-button">Delete</button>
-                  </form>
-                </div>
-              </div>
-            <% }) %>
-          </div>
-        <% } %>
+              <% }) %>
+            </div>
+          <% } %>
+        </div>
       </article>
     </section>
   </section>
