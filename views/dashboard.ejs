@@ -32,7 +32,24 @@
   const chartArea = chartBars.length
     ? `${chartLine} L ${chartBars[chartBars.length - 1].x.toFixed(1)} ${(chartHeight - chartPaddingBottom).toFixed(1)} L ${chartBars[0].x.toFixed(1)} ${(chartHeight - chartPaddingBottom).toFixed(1)} Z`
     : "";
-  const breakdownColors = ["#ffab5b", "#73d66f", "#45a7ff", "#f58bb7", "#9ea7b7"];
+  const breakdownColors = [
+    "#ffab5b",
+    "#73d66f",
+    "#45a7ff",
+    "#f58bb7",
+    "#9ea7b7",
+    "#6f7cff",
+    "#33c7be",
+    "#ff7f7f",
+    "#c08bff",
+    "#ffd166",
+    "#4cc38a",
+    "#6ab7ff",
+    "#ff94c2",
+    "#8796b5",
+    "#ff9f4d",
+    "#59d391",
+  ];
   const breakdownTotal = Math.max(categoryBreakdown.reduce((sum, category) => sum + Number(category.spent || 0), 0), 1);
   let breakdownOffset = 0;
   const breakdownStops = categoryBreakdown.map((category, index) => {
@@ -89,95 +106,97 @@
     </section>
 
     <section class="dashboard-visual-grid">
-      <article class="panel viz-panel">
-        <div class="section-heading chart-heading">
-          <div>
-            <p class="eyebrow">Expense breakdown</p>
-            <h2>Where the money is going</h2>
-          </div>
-        </div>
-        <div class="donut-layout">
-          <div class="budget-donut" style="--donut-background: <%= donutBackground %>;">
-            <div class="budget-donut-center">
-              <strong><%= overview.totalSpent %></strong>
-              <span>Total spent</span>
+      <div class="dashboard-visual-stack">
+        <article class="panel viz-panel">
+          <div class="section-heading chart-heading">
+            <div>
+              <p class="eyebrow">Expense breakdown</p>
+              <h2>Where the money is going</h2>
             </div>
           </div>
-          <div class="donut-legend">
-            <% if (breakdownStops.length === 0) { %>
-              <p class="muted">Add transactions to see your category mix.</p>
-            <% } else { %>
-              <% breakdownStops.forEach((item) => { %>
-                <a
-                  href="/categories/<%= item.id %>/transactions"
-                  class="legend-item legend-link"
-                >
-                  <span class="legend-swatch" style="background: <%= item.color %>"></span>
-                  <div>
-                    <strong><%= item.name %></strong>
-                    <p><%= Math.round(item.percent) %>% · <%= formatCurrency(item.spent) %></p>
-                  </div>
-                </a>
-              <% }) %>
-            <% } %>
+          <div class="donut-layout">
+            <div class="budget-donut" style="--donut-background: <%= donutBackground %>;">
+              <div class="budget-donut-center">
+                <strong><%= overview.totalSpent %></strong>
+                <span>Total spent</span>
+              </div>
+            </div>
+            <div class="donut-legend">
+              <% if (breakdownStops.length === 0) { %>
+                <p class="muted">Add transactions to see your category mix.</p>
+              <% } else { %>
+                <% breakdownStops.forEach((item) => { %>
+                  <a
+                    href="/categories/<%= item.id %>/transactions"
+                    class="legend-item legend-link"
+                  >
+                    <span class="legend-swatch" style="background: <%= item.color %>"></span>
+                    <div>
+                      <strong><%= item.name %></strong>
+                      <p><%= Math.round(item.percent) %>% · <%= formatCurrency(item.spent) %></p>
+                    </div>
+                  </a>
+                <% }) %>
+              <% } %>
+            </div>
           </div>
-        </div>
-      </article>
+        </article>
 
-      <article class="panel viz-panel">
-        <div class="section-heading chart-heading">
-          <div>
-            <p class="eyebrow">Spending overview</p>
-            <h2>Spending over time</h2>
+        <article class="panel viz-panel">
+          <div class="section-heading chart-heading">
+            <div>
+              <p class="eyebrow">Spending overview</p>
+              <h2>Spending over time</h2>
+            </div>
+            <span class="chart-pill">Last <%= spendingTimeline.length %> days</span>
           </div>
-          <span class="chart-pill">Last <%= spendingTimeline.length %> days</span>
-        </div>
-        <div class="spending-chart-card">
-          <div class="chart-axis-labels">
-            <span><%= formatCurrency(chartMax) %></span>
-            <span><%= formatCurrency(chartMax / 2) %></span>
-            <span>$0</span>
-          </div>
-          <div class="spending-chart-frame">
-            <svg viewBox="0 0 <%= chartWidth %> <%= chartHeight %>" class="spending-chart-svg" aria-hidden="true">
-              <defs>
-                <linearGradient id="spendingBarGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                  <stop offset="0%" stop-color="#7dc4ff" />
-                  <stop offset="100%" stop-color="#6170ff" />
-                </linearGradient>
-                <linearGradient id="spendingAreaGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                  <stop offset="0%" stop-color="#27a5ff" stop-opacity="0.28" />
-                  <stop offset="100%" stop-color="#27a5ff" stop-opacity="0.02" />
-                </linearGradient>
-              </defs>
-              <line x1="0" y1="210" x2="640" y2="210" class="chart-grid-line"></line>
-              <line x1="0" y1="115" x2="640" y2="115" class="chart-grid-line chart-grid-line-soft"></line>
-              <% if (chartArea) { %>
-                <path d="<%= chartArea %>" fill="url(#spendingAreaGradient)"></path>
-              <% } %>
-              <% chartBars.forEach((item) => { %>
-                <rect
-                  x="<%= (item.x - 18).toFixed(1) %>"
-                  y="<%= item.y.toFixed(1) %>"
-                  width="36"
-                  height="<%= Math.max(item.height, 6).toFixed(1) %>"
-                  rx="14"
-                  fill="url(#spendingBarGradient)"
-                  opacity="0.9"
-                ></rect>
-              <% }) %>
-              <% if (chartLine) { %>
-                <path d="<%= chartLine %>" fill="none" stroke="#11a7ff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"></path>
-              <% } %>
-            </svg>
-            <div class="chart-x-labels">
-              <% spendingTimeline.forEach((point) => { %>
-                <span><%= point.shortLabel.slice(0, 1) %></span>
-              <% }) %>
+          <div class="spending-chart-card">
+            <div class="chart-axis-labels">
+              <span><%= formatCurrency(chartMax) %></span>
+              <span><%= formatCurrency(chartMax / 2) %></span>
+              <span>$0</span>
+            </div>
+            <div class="spending-chart-frame">
+              <svg viewBox="0 0 <%= chartWidth %> <%= chartHeight %>" class="spending-chart-svg" aria-hidden="true">
+                <defs>
+                  <linearGradient id="spendingBarGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stop-color="#7dc4ff" />
+                    <stop offset="100%" stop-color="#6170ff" />
+                  </linearGradient>
+                  <linearGradient id="spendingAreaGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stop-color="#27a5ff" stop-opacity="0.28" />
+                    <stop offset="100%" stop-color="#27a5ff" stop-opacity="0.02" />
+                  </linearGradient>
+                </defs>
+                <line x1="0" y1="210" x2="640" y2="210" class="chart-grid-line"></line>
+                <line x1="0" y1="115" x2="640" y2="115" class="chart-grid-line chart-grid-line-soft"></line>
+                <% if (chartArea) { %>
+                  <path d="<%= chartArea %>" fill="url(#spendingAreaGradient)"></path>
+                <% } %>
+                <% chartBars.forEach((item) => { %>
+                  <rect
+                    x="<%= (item.x - 18).toFixed(1) %>"
+                    y="<%= item.y.toFixed(1) %>"
+                    width="36"
+                    height="<%= Math.max(item.height, 6).toFixed(1) %>"
+                    rx="14"
+                    fill="url(#spendingBarGradient)"
+                    opacity="0.9"
+                  ></rect>
+                <% }) %>
+                <% if (chartLine) { %>
+                  <path d="<%= chartLine %>" fill="none" stroke="#11a7ff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"></path>
+                <% } %>
+              </svg>
+              <div class="chart-x-labels">
+                <% spendingTimeline.forEach((point) => { %>
+                  <span><%= point.shortLabel.slice(0, 1) %></span>
+                <% }) %>
+              </div>
             </div>
           </div>
-        </div>
-      </article>
+        </article>
+      </div>
     </section>
 
     <section class="dashboard-mini-cards">
